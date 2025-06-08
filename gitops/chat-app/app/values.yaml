@@ -1,0 +1,52 @@
+namespaceOverride: "chatapp-app"
+
+replicaCount: 3
+appPort: 3000
+appVersion: 1.1.0
+prometheusSelector:
+  release: my-prometheus
+
+strategy:
+  type: RollingUpdate
+  rollingUpdate:
+    maxUnavailable: "25%"
+    maxSurge: "50%"
+
+# resources:
+#   requests:
+#     cpu: 10m
+#     memory: 32Mi
+#   limits:
+#     cpu: 50m
+#     memory: 128Mi
+
+ingress:
+  host: "chat-app.fun"
+  additionalPaths:
+    - "www.chat-app.fun"
+  path: /
+  annotations:
+    nginx.ingress.kubernetes.io/rewrite-target: /
+    nginx.ingress.kubernetes.io/ssl-redirect: "true"
+    cert-manager.io/cluster-issuer: "letsencrypt-prod"
+
+  tls:
+    enabled: true
+    hosts:
+      - "chat-app.fun"
+      - "www.chat-app.fun"
+
+customLabels:
+  app: "chatapp"
+  env: "prod"
+  developer: "erik"
+
+mysql:
+  namespaceOverride: "chatapp-db"
+  architecture: "replication"
+
+  auth:
+    database: "chatapp_db"
+    username: "chatapp_user"
+    replicationUser: "chatapp_replica"
+    existingSecret: "chatapp-mysql-secret"

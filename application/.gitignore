@@ -1,0 +1,4 @@
+*.env
+!*.example
+*copy
+*.dev.yaml

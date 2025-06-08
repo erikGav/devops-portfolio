@@ -1,0 +1,16 @@
+apiVersion: v2
+name: chat-app
+description: A Helm chart for Kubernetes
+
+type: application
+version: 1.0.0
+
+dependencies:
+  - name: mysql
+    alias: mysql
+    repository: https://charts.bitnami.com/bitnami
+    version: 13.0.0
+    condition: mysql.enabled
+
+maintainers:
+  - name: Erik

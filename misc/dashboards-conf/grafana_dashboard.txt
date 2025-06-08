@@ -1,0 +1,13 @@
+1. Total Messages by Room (Pie Chart)
+  sum(chatapp_messages_total) by (room)
+  labels: Name, Value
+
+2. Message Rate Over Time (5m) (Time Series)
+  sum(rate(chatapp_messages_total[5m]) * 60) by (room)
+
+3. Total Messages (Single Stat)
+  sum(chatapp_messages_total)
+
+4. Database Connectivity Per Pod (Single Stat)
+  chatapp_database_connected
+  options: {{pod}} - {{instance}}

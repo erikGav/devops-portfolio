@@ -1,0 +1,373 @@
+pipeline {
+    agent any
+
+    options {
+        timestamps()
+        gitLabConnection('jenkins')
+    }
+
+    environment {
+        SLACK_WEBHOOK_URL = credentials('slack_webhook')
+        AWS_REGION = "ap-south-1"
+        IMAGE_NAME = 'chat-app'
+    }
+
+    stages {
+        stage ("Checkout") {
+            steps {
+                gitlabCommitStatus("Checkout") {
+                    script {
+                        checkout scm
+                        env.BRANCH = env.BRANCH_NAME.trim().split('/')[0]
+                        echo "Branch name is ${env.BRANCH}"
+                    }
+                }
+            }
+        }
+        stage ("Version") {
+            steps {
+                gitlabCommitStatus("Version") {
+                    script {
+                        withCredentials([gitUsernamePassword(credentialsId: 'gitlab_credentials', gitToolName: 'Default')
+                        ]) {
+                            script {
+                                if (env.BRANCH == 'main') {
+                                    echo "On main branch, generating next version tag"
+                                    def versionFromCommit = getVersionFromCommit()
+                                    env.VERSION = generateNextTag(versionFromCommit)
+                                } else {
+                                    echo "Not on main branch, skipping version tag generation"
+                                    env.VERSION = "latest"
+                                }
+
+                                echo "New version tag is ${env.VERSION}"
+                            }
+                        }
+                    }
+                }
+            }
+        }
+        stage ("Build Test Image") {
+            steps {
+                gitlabCommitStatus("Build") {
+                    script {
+                        withCredentials([string(credentialsId: 'registry_url', variable: 'ECR_REGISTRY_URL')
+                        ]) {
+                            echo "Build Chat app and test container"
+                            sh '''
+                                docker build -t $ECR_REGISTRY_URL/erik/$IMAGE_NAME-test:$VERSION -f docker/Dockerfile.test .
+                            '''
+                        }
+                    }
+                }
+            }
+        }
+        stage ("Unit Test") {
+            steps {
+                gitlabCommitStatus("Unit Test") {
+                    script {
+                        withCredentials([string(credentialsId: 'registry_url', variable: 'ECR_REGISTRY_URL')
+                        ]) {
+                            echo "Run unit tests"
+                            sh '''
+                                export ECR_REGISTRY_URL=$ECR_REGISTRY_URL
+                                docker compose run --build --remove-orphans unit-test
+                            '''
+                        }
+                    }
+                }
+            }
+        }
+        stage ("Build App Images") {
+            steps {
+                gitlabCommitStatus("Build") {
+                    script {
+                        withCredentials([string(credentialsId: 'registry_url', variable: 'ECR_REGISTRY_URL')
+                        ]) {
+                            echo "Build Chat app and test container"
+                            sh '''
+                                docker build -t $ECR_REGISTRY_URL/erik/$IMAGE_NAME:$VERSION -f docker/Dockerfile .
+                                docker build -t $ECR_REGISTRY_URL/erik/nginx:stable-alpine3.21-static -f docker/Dockerfile.nginx .
+                            '''
+                        }
+                    }
+                }
+            }
+        }
+        stage ("Setup .env") {
+            steps {
+                script {
+                    echo "Setting up .env file (silently)"
+                    sh '''
+                        #!/bin/sh
+                        set +x
+
+                        secret_json=$(aws secretsmanager get-secret-value --secret-id erik-chatapp/mysql --query SecretString --output text)
+
+                        user=$(echo "$secret_json" | jq -r '."mysql-user"')
+                        password=$(echo "$secret_json" | jq -r '."mysql-password"')
+                        root_password=$(echo "$secret_json" | jq -r '."mysql-root-password"')
+                        host="mysql"
+                        db="chat_db"
+
+                        cat > .app.env <<-EOF
+                            MYSQL_ROOT_PASSWORD=${root_password}
+                            MYSQL_PASSWORD=${password}
+                            MYSQL_USER=${user}
+                            MYSQL_DATABASE=${db}
+                            MYSQL_HOST=${host}
+                            MYSQL_URI=${user}:${password}@${host}:3306/${db}
+                        EOF
+                    '''
+                }
+            }
+        }
+        stage ("Runtime") {
+            steps {
+                gitlabCommitStatus("Runtime") {
+                    script {
+                        withCredentials([string(credentialsId: 'registry_url', variable: 'ECR_REGISTRY_URL')
+                        ]) {
+                            echo "Start stack for E2E tests"
+                            sh '''
+                                export ECR_REGISTRY_URL=$ECR_REGISTRY_URL
+                                docker compose --profile app up -d --remove-orphans --build
+                            '''
+                        }
+                    }
+                }
+            }
+        }
+        stage ("E2E Test") {
+            steps {
+                gitlabCommitStatus("E2E Test") {
+                    script {
+                        withCredentials([string(credentialsId: 'registry_url', variable: 'ECR_REGISTRY_URL')
+                        ]) {
+                            echo "Run E2E tests"
+                            sh '''
+                                export ECR_REGISTRY_URL=$ECR_REGISTRY_URL
+                                docker compose run --build --remove-orphans e2e-test
+                            '''
+                        }
+                    }
+                }
+            }
+        }
+        stage ("Tag") {
+            when {
+                expression { env.BRANCH == 'main' }
+            }
+            steps {
+                gitlabCommitStatus("Tag") {
+                    script {
+                        withCredentials([gitUsernamePassword(credentialsId: 'gitlab_credentials', gitToolName: 'Default') 
+                        ]) {
+                            echo "Tagging the commit with version ${env.VERSION}"
+                            sh '''
+                                git config user.email "jenkins@example.com"
+                                git config user.name "Jenkins CI"
+                                git tag -a $VERSION -m "Release version $VERSION"
+                                git push origin $VERSION
+                            '''
+                        }
+                    }
+                }
+            }
+        }
+        stage ("Publish") {
+            when{
+                expression { env.BRANCH == 'main' }
+            }
+            steps {
+                gitlabCommitStatus("Publish") {
+                    script {
+                        withCredentials([string(credentialsId: 'registry_url', variable: 'ECR_REGISTRY_URL'), string(credentialsId: 'registry_username', variable: 'ECR_REGISTRY_USERNAME')
+                        ]) {
+                            echo "Publishing Docker images to ECR"
+                            sh '''
+                                aws ecr get-login-password --region $AWS_REGION | docker login --username $ECR_REGISTRY_USERNAME --password-stdin $ECR_REGISTRY_URL
+                                docker push $ECR_REGISTRY_URL/erik/$IMAGE_NAME:$VERSION
+                                docker push $ECR_REGISTRY_URL/erik/$IMAGE_NAME-test:$VERSION
+                                docker push $ECR_REGISTRY_URL/erik/nginx:stable-alpine3.21-static
+                            '''
+                        }
+                    }
+                }
+            }
+        }
+        stage ("Deploy") {
+            when {
+                expression { env.BRANCH == 'main' }
+            }
+            steps {
+                gitlabCommitStatus("Deploy") {
+                    script {
+                        withCredentials([gitUsernamePassword(credentialsId: 'gitlab_credentials', gitToolName: 'Default')
+                        ]) {
+                            echo "Deploying the application"
+                            sh '''
+                                git clone https://gitlab.com/bootcamp1531414/portfolio-gitops.git portfolio-gitops
+                                cd portfolio-gitops
+
+                                git config user.name "Jenkins CI"
+                                git config user.email "jenkins@example.com"
+
+                                sed -i "s/^appVersion: .*/appVersion: $VERSION/" chat-app/app/values.yaml
+
+                                git add chat-app/app/values.yaml
+                                git commit -m "Updated version to $VERSION"
+                                git push origin main
+                            '''
+                        }
+                    }
+                }
+            }
+        }
+    }
+    post {
+        always {
+            script {
+                withCredentials([string(credentialsId: 'registry_url', variable: 'ECR_REGISTRY_URL')
+                ]) {
+                    echo "Cleaning up Docker containers and images"
+                    sh '''
+                        export ECR_REGISTRY_URL=$ECR_REGISTRY_URL
+                        docker compose --profile app down --rmi all -v
+                        docker container prune -f
+                        docker image prune -f
+                    '''
+                }
+            }
+        }
+        success {
+            script {
+                sendSlackNotification('SUCCESS')
+            }
+        }
+        failure {
+            script {
+                sendSlackNotification('FAILURE')
+            }
+        }
+        aborted {
+            script {
+                sendSlackNotification('ABORTED')
+            }
+        }
+    }
+}
+
+def getVersionFromCommit() {
+    def commitMessage = sh(
+        script: "git log -1 --pretty=%B",
+        returnStdout: true
+    ).trim()
+    
+    def parts = commitMessage.split('#')
+    
+    if (parts.size() < 2) {
+        error("No version found in commit message: ${commitMessage}. Expected format with #major.minor")
+    }
+    
+    def version = parts[1]
+    
+    if (!(version ==~ /^\d+\.\d+$/)) {
+        error("Invalid version format in commit: ${version}. Expected format: major.minor (e.g., 3.5)")
+    }
+    
+    return version
+}
+
+def generateNextTag(commitVersion) {
+    def defaultTag = "${commitVersion}.0"
+    sh "git fetch --tags"
+
+    def tagsOutput = sh(
+        script: "git tag --list | grep '^${commitVersion}\\.' | grep -oE '[0-9]+\\.[0-9]+\\.[0-9]+' | sort -V",
+        returnStdout: true
+    ).trim()
+
+    def tags = tagsOutput ? tagsOutput.split("\n") : []
+
+    def newTag
+
+    if (tags.size() > 0) {
+        def lastTag = tags[-1]
+        echo "Last tag found: ${lastTag}"
+
+        def (major, minor, patch) = lastTag.tokenize('.').collect { it.toInteger() }
+        newTag = "${major}.${minor}.${patch + 1}"
+    } else {
+        echo "No previous tags found, starting at ${defaultTag}"
+        newTag = defaultTag
+    }
+
+    echo "New tag will be: ${newTag}"
+    return newTag
+}
+
+def sendSlackNotification(String status, String messageOverride = null) {
+    script {
+        def color
+        def message
+
+        switch (status) {
+            case 'SUCCESS':
+                color = '#00FF00' // Green
+                message = messageOverride ?: ":white_check_mark: Build successful for branch ${env.BRANCH}"
+                break
+            case 'FAILURE':
+                color = '#FF0000' // Red
+                message = messageOverride ?: ":x: Build failed for branch ${env.BRANCH}"
+                break
+            case 'ABORTED':
+                color = '#FFA500' // Orange
+                message = messageOverride ?: ":warning: Build aborted for branch ${env.BRANCH}"
+                break
+            default:
+                color = '#ADD8E6' // Light Blue (Default)
+                message = messageOverride ?: "Build status: ${status} for branch ${env.BRANCH}"
+        }
+
+        def payloadJson = """
+        {
+            "attachments": [
+                {
+                    "color": "${color}",
+                    "text": "${message}",
+                    "actions": [
+                        {
+                            "type": "button",
+                            "text": "View Build",
+                            "url": "${env.BUILD_URL}",
+                            "style": "primary"
+                        }
+                    ],
+                    "fields": [
+                        {
+                            "title": "Job Name",
+                            "value": "${env.JOB_NAME}",
+                            "short": true
+                        },
+                        {
+                            "title": "Build Number",
+                            "value": "${env.BUILD_NUMBER}",
+                            "short": true
+                        },
+                        {
+                            "title": "Git Branch",
+                            "value": "${env.GIT_BRANCH}",
+                            "short": true
+                        }
+                    ]
+                }
+            ]
+        }
+        """
+
+        writeFile file: 'slack-payload.json', text: payloadJson
+        
+        sh 'curl -X POST -H "Content-type: application/json" --data @slack-payload.json $SLACK_WEBHOOK_URL'
+    }
+}

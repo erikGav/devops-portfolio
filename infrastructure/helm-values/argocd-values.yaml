@@ -1,0 +1,30 @@
+server:
+  resources:
+    requests:
+      cpu: 75m
+      memory: 192Mi
+    limits:
+      cpu: 200m
+      memory: 384Mi
+
+configs:
+  secret:
+    argocdServerAdminPassword: $2a$10$aQgJU2mHOUBfsSlq.605iuzv1O93er2JGuWtJ9wFDsIxMVbAJcYTW
+  params:
+    server.insecure: true
+
+controller:
+  resources:
+    requests:
+      cpu: 150m
+      memory: 256Mi
+    limits:
+      cpu: 500m
+      memory: 512Mi
+  topologySpreadConstraints:
+    - labelSelector:
+        matchLabels:
+          app.kubernetes.io/instance: argocd
+      maxSkew: 1
+      topologyKey: kubernetes.io/hostname
+      whenUnsatisfiable: ScheduleAnyway

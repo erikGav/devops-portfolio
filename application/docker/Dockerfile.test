@@ -1,0 +1,20 @@
+FROM python:3.13.3-alpine
+
+ENV PYTHONDONTWRITEBYTECODE=1
+ENV PYTHONUNBUFFERED=1
+
+WORKDIR /app
+
+COPY requirements-test.txt .
+RUN pip install --upgrade pip && pip install -r requirements-test.txt
+
+COPY requirements.txt .
+RUN pip install -r requirements.txt
+
+COPY app/ ./app/
+COPY tests/ ./tests/
+COPY pytest.ini .
+
+ENV PYTHONPATH=/app:/app/app
+
+CMD ["python", "tests/run_tests.py"]

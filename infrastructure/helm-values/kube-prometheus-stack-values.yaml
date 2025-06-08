@@ -1,0 +1,42 @@
+prometheus:
+  prometheusSpec:
+    maximumStartupDurationSeconds: 120
+    serviceMonitorSelector:
+      matchLabels:
+        release: my-prometheus
+    resources:
+      requests:
+        cpu: 300m
+        memory: 400Mi
+      limits:
+        cpu: 600m
+        memory: 1.5Gi
+
+grafana:
+  resources:
+    requests:
+      cpu: 50m
+      memory: 128Mi
+    limits:
+      cpu: 150m
+      memory: 256Mi
+
+alertmanager:
+  alertmanagerSpec:
+    resources:
+      requests:
+        cpu: 25m
+        memory: 64Mi
+      limits:
+        cpu: 100m
+        memory: 128Mi
+
+# Prometheus Operator
+prometheusOperator:
+  resources:
+    requests:
+      cpu: 25m
+      memory: 64Mi
+    limits:
+      cpu: 100m
+      memory: 128Mi

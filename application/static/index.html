@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>ChatApp</title>
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body>
+    <div class="container">
+      <div class="header">
+        <h1>💬 ChatApp</h1>
+        <div class="room-info" id="roomInfo">
+          Enter a room to start chatting
+        </div>
+      </div>
+
+      <div class="join-form" id="joinForm">
+        <h2>Join a Chat Room</h2>
+        <div class="input-group">
+          <label for="roomInput">Room Name</label>
+          <input
+            type="text"
+            id="roomInput"
+            placeholder="Enter room name (e.g., general, random)"
+            required
+            onkeypress="handleJoinKeyPress(event)"
+          />
+        </div>
+        <div class="input-group">
+          <label for="usernameInput">Your Username</label>
+          <input
+            type="text"
+            id="usernameInput"
+            placeholder="Enter your username"
+            required
+            onkeypress="handleJoinKeyPress(event)"
+          />
+        </div>
+        <button class="btn" onclick="joinRoom()">Join Room</button>
+      </div>
+
+      <div class="chat-container" id="chatContainer">
+        <div class="chat-messages" id="chatMessages">
+          <div class="empty-state">
+            No messages yet. Start the conversation!
+          </div>
+        </div>
+        <div class="chat-input">
+          <input
+            type="text"
+            id="messageInput"
+            placeholder="Type your message..."
+            onkeypress="handleKeyPress(event)"
+          />
+          <button class="btn send-btn" onclick="sendMessage()">Send</button>
+        </div>
+        <div class="controls">
+          <button class="btn change-name-btn" onclick="changeUsername()">
+            Change Name
+          </button>
+          <button class="btn delete-btn" onclick="clearChat()">
+            Clear Chat
+          </button>
+          <button class="btn leave-btn" onclick="leaveRoom()">
+            Leave Room
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <script src="app.js"></script>
+  </body>
+</html>
