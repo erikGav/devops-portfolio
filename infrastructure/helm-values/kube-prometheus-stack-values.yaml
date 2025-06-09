@@ -1,9 +1,6 @@
 prometheus:
   prometheusSpec:
     maximumStartupDurationSeconds: 120
-    serviceMonitorSelector:
-      matchLabels:
-        release: my-prometheus
     resources:
       requests:
         cpu: 300m
