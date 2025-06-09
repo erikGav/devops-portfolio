@@ -4,6 +4,8 @@ A comprehensive Terraform project for deploying a production-ready Amazon EKS cl
 
 ## Architecture Overview
 
+![alt text](../misc/diagrams/portfolio-infrastructure-diagram.png)
+
 This infrastructure creates:
 
 - **VPC** with public/private subnets across multiple AZs
@@ -11,8 +13,6 @@ This infrastructure creates:
 - **IAM Roles** for cluster, nodes, and service accounts
 - **OIDC Provider** for service account authentication
 - **Essential Applications** via Helm: ArgoCD, External Secrets, Prometheus Stack
-
-![alt text](../misc/diagrams/portfolio-infrastructure-diagram.png)
 
 ## Quick Start
 

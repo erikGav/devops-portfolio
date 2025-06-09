@@ -14,6 +14,8 @@ A modern, real-time chat application built with Flask and Docker. Features room-
 
 ## Architecture
 
+![alt text](../misc/diagrams/portfolio-app-diagram.png)
+
 ```
 ┌─────────────┐    ┌─────────────┐    ┌─────────────┐
 │    Nginx    │    │    Flask    │    │    MySQL    │
@@ -21,8 +23,6 @@ A modern, real-time chat application built with Flask and Docker. Features room-
 │    :80      │    │    :5000    │    │   :3306     │
 └─────────────┘    └─────────────┘    └─────────────┘
 ```
-
-![alt text](../misc/diagrams/portfolio-app-diagram.png)
 
 ## Quick Start
 
