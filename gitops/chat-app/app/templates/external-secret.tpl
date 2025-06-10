@@ -7,8 +7,6 @@ metadata:
   name: {{ .Release.Name }}-db-external-secrets
   namespace: {{ include "chat.app.mysql.namespace" . }}
   annotations:
-    # "helm.sh/hook": pre-install,pre-upgrade
-    # "helm.sh/hook-weight": "-2"
     argocd.argoproj.io/sync-wave: "-4"
 spec:
   refreshInterval: 1h

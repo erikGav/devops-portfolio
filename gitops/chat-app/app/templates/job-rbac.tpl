@@ -5,10 +5,6 @@ metadata:
   name: {{ .Release.Name }}-secret-manager-sa
   namespace: {{ include "chat.app.namespace" . }}
   annotations:
-    # Helm hooks
-    # "helm.sh/hook": pre-install,pre-upgrade
-    # "helm.sh/hook-weight": "-3"
-    # ArgoCD sync waves
     argocd.argoproj.io/sync-wave: "-3"
 ---
 # Role in mysql namespace allowing read access to secrets
@@ -18,10 +14,6 @@ metadata:
   name: {{ .Release.Name }}-mysql-secret-reader
   namespace: {{ include "chat.app.mysql.namespace" . }}
   annotations:
-    # Helm hooks
-    # "helm.sh/hook": pre-install,pre-upgrade
-    # "helm.sh/hook-weight": "-3"
-    # ArgoCD sync waves
     argocd.argoproj.io/sync-wave: "-3"
 rules:
   - apiGroups: [""]
@@ -35,10 +27,6 @@ metadata:
   name: {{ .Release.Name }}-allow-chatapp-to-read-mysql-secrets
   namespace: {{ include "chat.app.mysql.namespace" . }}
   annotations:
-    # Helm hooks
-    # "helm.sh/hook": pre-install,pre-upgrade
-    # "helm.sh/hook-weight": "-3"
-    # ArgoCD sync waves
     argocd.argoproj.io/sync-wave: "-3"
 subjects:
   - kind: ServiceAccount
@@ -56,10 +44,6 @@ metadata:
   name: {{ .Release.Name }}-chat-secret-writer
   namespace: {{ include "chat.app.namespace" . }}
   annotations:
-    # Helm hooks
-    # "helm.sh/hook": pre-install,pre-upgrade
-    # "helm.sh/hook-weight": "-3"
-    # ArgoCD sync waves
     argocd.argoproj.io/sync-wave: "-3"
 rules:
   - apiGroups: [""]
@@ -73,10 +57,6 @@ metadata:
   name: {{ .Release.Name }}-bind-chatapp-secret-writer
   namespace: {{ include "chat.app.namespace" . }}
   annotations:
-    # Helm hooks
-    # "helm.sh/hook": pre-install,pre-upgrade
-    # "helm.sh/hook-weight": "-3"
-    # ArgoCD sync waves
     argocd.argoproj.io/sync-wave: "-3"
 subjects:
   - kind: ServiceAccount

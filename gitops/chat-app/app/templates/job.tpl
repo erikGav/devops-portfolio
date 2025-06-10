@@ -4,8 +4,6 @@ metadata:
   name: {{ .Release.Name }}-generate-mysql-uri
   namespace: {{ include "chat.app.namespace" . }}
   annotations:
-    # "helm.sh/hook": pre-install,pre-upgrade
-    # "helm.sh/hook-weight": "-1"
     argocd.argoproj.io/sync-wave: "-2"
 
 spec:
