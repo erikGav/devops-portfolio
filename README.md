@@ -1,4 +1,4 @@
-# 🚀 DevOps Portfolio: Production-Ready Chat Application
+# 🚀 DevOps Portfolio: Chat Application
 
 A comprehensive end-to-end DevOps project showcasing modern cloud-native practices, from application development to production deployment on AWS with Kubernetes.
 
@@ -67,12 +67,12 @@ This portfolio demonstrates a complete DevOps lifecycle with three main componen
 ```
 portfolio-project/
 ├── 📱 APPLICATION
-│   ├── app/                    # Flask application core
+│   ├── app/                   # Flask application core
 │   ├── static/                # Frontend assets
 │   ├── tests/                 # Comprehensive test suite (35+ tests)
 │   ├── docker/                # Container definitions
 │   ├── compose.yaml           # Production Docker Compose
-│   ├── Jenkinsfile           # CI/CD pipeline
+│   ├── Jenkinsfile            # CI/CD pipeline
 │   └── requirements.txt       # Dependencies
 │
 ├── 🏗️ INFRASTRUCTURE
