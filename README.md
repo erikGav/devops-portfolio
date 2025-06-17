@@ -16,11 +16,6 @@ This portfolio demonstrates a complete DevOps lifecycle with three main componen
 └─────────────────┘    └─────────────────┘    └─────────────────┘
 ```
 
-### 🎯 Live Demo
-
-- **Application**: [https://chat-app.fun](https://chat-app.fun)
-- **Alternative URL**: [https://www.chat-app.fun](https://www.chat-app.fun)
-
 ## ✨ Key Features & Capabilities
 
 ### Application Features
