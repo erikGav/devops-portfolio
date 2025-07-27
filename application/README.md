@@ -271,8 +271,6 @@ The application includes comprehensive health checks for all services:
 - **Check**: HTTP request to main page (`/`)
 - **Verifies**: Static file serving and proxy functionality
 
-````
-
 ## Database Schema
 
 ```sql
@@ -284,7 +282,7 @@ CREATE TABLE chat (
     username VARCHAR(50) NOT NULL,
     message TEXT NOT NULL
 );
-````
+```
 
 ---
 
