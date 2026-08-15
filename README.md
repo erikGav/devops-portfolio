@@ -10,7 +10,7 @@ This portfolio demonstrates a complete DevOps lifecycle with three main componen
 ┌─────────────────┐    ┌─────────────────┐    ┌─────────────────┐
 │   APPLICATION   │    │ INFRASTRUCTURE  │    │     GITOPS      │
 │                 │    │                 │    │                 │
-│ Flask Chat App  │──▶│ AWS + Terraform  │──▶│ ArgoCD + Helm   │
+│ Flask Chat App  │──▶ │ AWS + Terraform │──▶ │ ArgoCD + Helm   │
 │ Docker + CI/CD  │    │ EKS + VPC       │    │ Kubernetes      │
 │ Testing + API   │    │ IAM + Security  │    │ Monitoring      │
 └─────────────────┘    └─────────────────┘    └─────────────────┘
